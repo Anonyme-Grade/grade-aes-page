@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GRADE — Grounded Rubric Annotation with Distributional Evaluation</title>
+  <meta name="description" content="GRADE: an explainable Automated Essay Scoring framework combining synthetic teacher personas with jointly LoRA-adapted LLM annotations. NeurIPS 2026 submission." />
+  <style>
+    :root {
+      --bg: #f7f7f4;
+      --paper: #ffffff;
+      --ink: #1f2933;
+      --muted: #667085;
+      --line: #e5e7eb;
+      --blue: #1f5f99;
+      --blue-soft: #eaf3fb;
+      --teal: #0e6655;
+      --teal-soft: #eaf7f4;
+      --purple: #6d4aa2;
+      --purple-soft: #f2eefb;
+      --orange: #b45309;
+      --orange-soft: #fff3df;
+      --green: #2e7d32;
+      --green-soft: #e9f7ec;
+      --yellow: #b7791f;
+      --yellow-soft: #fff7df;
+      --red: #b42318;
+      --red-soft: #fff0f0;
+      --shadow: 0 18px 45px rgba(31, 41, 51, 0.08);
+      --radius: 20px;
+      --max: 1160px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.62;
+    }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: var(--max); margin: 0 auto; padding: 0 22px; }
+
+    header {
+      padding: 54px 0 36px;
+      border-bottom: 1px solid var(--line);
+      background:
+        radial-gradient(circle at 18% 0%, rgba(31,95,153,0.14), transparent 31%),
+        radial-gradient(circle at 85% 10%, rgba(109,74,162,0.12), transparent 30%),
+        linear-gradient(180deg, #fbfbf9 0%, #f7f7f4 100%);
+    }
+
+    .hero { text-align: center; max-width: 940px; margin: 0 auto; }
+    .eyebrow {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 13px;
+      border: 1px solid #d9e3ee;
+      border-radius: 999px;
+      color: var(--blue);
+      background: rgba(255,255,255,0.72);
+      font-size: 13px;
+      font-weight: 750;
+      margin-bottom: 18px;
+    }
+    h1 {
+      font-size: clamp(48px, 9vw, 96px);
+      line-height: 0.9;
+      letter-spacing: -0.075em;
+      margin: 0;
+      color: #17324d;
+    }
+    .long-title {
+      margin: 16px auto 0;
+      font-size: clamp(18px, 2.4vw, 28px);
+      line-height: 1.18;
+      color: #263b50;
+      max-width: 850px;
+      letter-spacing: -0.02em;
+      font-weight: 700;
+    }
+    .subtitle {
+      font-size: clamp(16px, 2vw, 22px);
+      color: #4b5c6f;
+      margin: 16px auto 8px;
+      max-width: 850px;
+    }
+    .authors, .affils { color: var(--muted); font-size: 14px; margin-top: 8px; }
+    .buttons { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 26px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 17px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: white;
+      color: #243447;
+      font-weight: 750;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(0,0,0,0.08); text-decoration: none; }
+    .btn.primary { background: #17324d; color: white; border-color: #17324d; }
+
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(247,247,244,0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    nav .wrap { display: flex; justify-content: center; gap: 22px; padding-top: 10px; padding-bottom: 10px; flex-wrap: wrap; }
+    nav a { color: #4b5563; font-size: 13px; font-weight: 750; }
+
+    section { padding: 54px 0; }
+    h2 {
+      margin: 0 0 14px;
+      font-size: clamp(28px, 4vw, 40px);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      color: #17324d;
+    }
+    h3 { margin: 0 0 8px; color: #172b3d; line-height: 1.25; }
+    p { margin: 0; }
+    .lead { color: #4b5563; font-size: 17px; max-width: 870px; }
+
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 22px; }
+    .mini p { color: var(--muted); font-size: 14px; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+    .pill.blue { background: var(--blue-soft); color: var(--blue); }
+    .pill.purple { background: var(--purple-soft); color: var(--purple); }
+    .pill.teal { background: var(--teal-soft); color: var(--teal); }
+    .pill.orange { background: var(--orange-soft); color: var(--orange); }
+
+    .overview-img {
+      margin-top: 24px;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    .overview-img img { display: block; width: 100%; border-radius: 14px; }
+    .caption { color: var(--muted); font-size: 13px; margin-top: 10px; padding: 0 8px; }
+
+    .pipeline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 22px; }
+    .pipe-card { position: relative; overflow: hidden; min-height: 190px; }
+    .pipe-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 6px; background: var(--blue); }
+    .pipe-card.purple::before { background: var(--purple); }
+    .pipe-card.teal::before { background: var(--teal); }
+    .pipe-card p { color: var(--muted); font-size: 14px; }
+
+    .results { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 22px; }
+    .metric { text-align: center; padding: 22px 14px; }
+    .metric .num { font-size: 36px; font-weight: 900; color: #17324d; line-height: 1; letter-spacing: -0.03em; }
+    .metric .delta { font-size: 12px; color: var(--green); font-weight: 800; margin-top: 4px; letter-spacing: 0.02em; }
+    .metric .lbl { font-size: 12px; color: var(--muted); margin-top: 8px; }
+    .metric.contrast .num { color: var(--purple); }
+
+    .results-note {
+      margin-top: 18px;
+      padding: 14px 16px;
+      background: var(--blue-soft);
+      border: 1px solid #c8dceb;
+      border-radius: 14px;
+      color: #1c4060;
+      font-size: 14px;
+    }
+
+    .demo-intro {
+      background: white;
+      border: 1px dashed #d6dde4;
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin-bottom: 22px;
+      color: #475467;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .demo-intro strong { color: #17324d; }
+
+    .demo-head { display: flex; justify-content: space-between; gap: 16px; align-items: end; flex-wrap: wrap; margin-bottom: 18px; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tab {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: white;
+      padding: 8px 13px;
+      cursor: pointer;
+      font-weight: 800;
+      color: #475467;
+      transition: all 0.15s ease;
+    }
+    .tab:hover { border-color: #c8d3df; }
+    .tab.active { background: #17324d; color: white; border-color: #17324d; }
+
+    .demo-shell { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 18px; align-items: start; }
+    .report-top { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .tag { font-size: 12px; padding: 5px 10px; border-radius: 999px; background: #eef2f7; color: #4b5563; font-weight: 750; }
+    .tag.ok { background: var(--green-soft); color: var(--green); }
+    .tag.warn { background: var(--yellow-soft); color: var(--yellow); }
+    .tag.low { background: var(--red-soft); color: var(--red); }
+    .tag.high { background: var(--blue-soft); color: var(--blue); }
+    .tag.blue { background: var(--blue-soft); color: var(--blue); }
+
+    .summary-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+    .summary-item { background: #fbfbfa; border: 1px solid var(--line); border-radius: 14px; padding: 12px 8px; text-align: center; }
+    .summary-item strong { display: block; font-size: 22px; line-height: 1; color: #17324d; }
+    .summary-item span { display: block; color: var(--muted); font-size: 11px; margin-top: 6px; }
+
+    .quote-board {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+    }
+    .quote-board h3 { margin-bottom: 12px; }
+    .excerpt { padding: 12px 13px; border-radius: 13px; margin: 10px 0; font-size: 14px; color: #344054; border: 1px solid transparent; }
+    .excerpt.strength { background: var(--green-soft); border-color: #cdebd3; }
+    .excerpt.weakness { background: var(--yellow-soft); border-color: #f4df9e; }
+    .excerpt.error { background: var(--red-soft); border-color: #ffd0d0; }
+    .excerpt .kind { font-size: 11px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; display: block; margin-bottom: 4px; }
+    .excerpt.strength .kind { color: var(--green); }
+    .excerpt.weakness .kind { color: var(--yellow); }
+    .excerpt.error .kind { color: var(--red); }
+    .excerpt q { font-style: italic; }
+
+    .bar-row { display: grid; grid-template-columns: 148px 1fr 36px; gap: 10px; align-items: center; margin: 10px 0; font-size: 13px; }
+    .bar-bg { height: 9px; background: #edf0f2; border-radius: 99px; overflow: hidden; }
+    .bar { height: 100%; background: var(--blue); border-radius: 99px; transition: width 0.4s ease; }
+    .bar.teal { background: var(--teal); }
+    .bar.orange { background: var(--orange); }
+    .bar.purple { background: var(--purple); }
+
+    .refs { margin-top: 18px; }
+    .ref { border-left: 4px solid var(--green); background: white; border-radius: 12px; padding: 12px 13px; margin-top: 10px; border-top: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .ref.weakness { border-left-color: var(--yellow); }
+    .ref.error { border-left-color: var(--red); }
+    .ref .meta-line { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 5px; }
+    .badge { font-size: 10px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; border-radius: 999px; padding: 2px 7px; }
+    .badge.strength { color: var(--green); background: var(--green-soft); }
+    .badge.weakness { color: var(--yellow); background: var(--yellow-soft); }
+    .badge.error { color: var(--red); background: var(--red-soft); }
+    .cat { color: var(--muted); font-size: 12px; font-weight: 750; }
+    .quote { color: #334155; font-style: italic; font-size: 13px; margin-top: 4px; }
+    .why { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+    .persona-block {
+      margin-top: 18px;
+      background: #fbfbfa;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .persona-block h3 { margin-bottom: 4px; }
+    .persona-block .persona-sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+    .persona-bars { display: grid; gap: 8px; }
+    .persona-bar-row { display: grid; grid-template-columns: 130px 1fr 80px; gap: 10px; align-items: center; font-size: 13px; }
+    .persona-bar-bg { height: 16px; background: #edf0f2; border-radius: 99px; position: relative; overflow: visible; }
+    .persona-mean {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--purple);
+      border: 2px solid white;
+      box-shadow: 0 0 0 1px var(--purple);
+    }
+    .persona-spread {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 4px;
+      background: rgba(109, 74, 162, 0.35);
+      border-radius: 99px;
+    }
+    .persona-stats { color: var(--muted); font-size: 12px; text-align: right; }
+
+    .demo-footer {
+      margin-top: 22px;
+      padding: 16px 18px;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      color: #4b5563;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .demo-footer strong { color: #17324d; }
+
+    pre { overflow-x: auto; background: #111827; color: #f9fafb; border-radius: 16px; padding: 18px; font-size: 13px; line-height: 1.5; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    footer { padding: 28px 0 44px; color: #98a2b3; font-size: 13px; text-align: center; }
+
+    @media (max-width: 900px) {
+      .grid-3, .pipeline, .results, .demo-shell { grid-template-columns: 1fr; }
+      .summary-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .persona-bar-row { grid-template-columns: 100px 1fr 70px; font-size: 12px; }
+      nav { position: static; }
+      h1 { letter-spacing: -0.05em; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap hero">
+      <div class="eyebrow">Explainable Automated Essay Scoring</div>
+      <h1>GRADE</h1>
+      <div class="long-title">Grounded Rubric Annotation and Distributional Evaluation</div>
+      <p class="subtitle">Auditable essay scoring at competitive accuracy: synthetic teacher personas plus jointly adapted LLM annotations.</p>
+      <div class="authors">Anonymous Authors</div>
+      <div class="affils">Under double-blind review · NeurIPS 2026</div>
+      <div class="buttons">
+        <a class="btn primary" href="#abstract">Read abstract</a>
+        <a class="btn" href="#method">Method</a>
+        <a class="btn" href="#demo">View grounded reports</a>
+        <a class="btn" href="paper.pdf">Paper (PDF)</a>
+        <a class="btn" href="https://github.com/USERNAME/grade-aes">Code</a>
+      </div>
+    </div>
+  </header>
+
+  <nav>
+    <div class="wrap">
+      <a href="#abstract">Abstract</a>
+      <a href="#method">Method</a>
+      <a href="#results">Results</a>
+      <a href="#demo">Grounded reports</a>
+      <a href="#citation">Citation</a>
+    </div>
+  </nav>
+
+  <main>
+    <section id="abstract">
+      <div class="wrap">
+        <h2>Abstract</h2>
+        <p class="lead">
+          Automated Essay Scoring systems can achieve strong agreement with human graders, but their limited interpretability constrains use in educational settings where feedback, contestability, and auditability matter. GRADE combines synthetic teacher-persona distributions with a jointly LoRA-adapted LLM annotator, supporting two operating points: a performance-tuned variant that prioritizes accuracy, and an explanation-tuned variant that constrains every scorer feature to trace back to a verbatim essay span.
+        </p>
+        <div class="grid-3">
+          <div class="card mini">
+            <span class="pill blue">Persona signal</span>
+            <h3>Distributional grading</h3>
+            <p>Nine synthetic teacher personas score each essay across rubric dimensions, exposing plausible disagreement rather than only one point estimate.</p>
+          </div>
+          <div class="card mini">
+            <span class="pill purple">Joint adaptation</span>
+            <h3>Task-aligned annotations</h3>
+            <p>A LoRA-adapted LLM annotator learns rubric features through a differentiable scoring-surrogate loss while auxiliary losses preserve annotation structure.</p>
+          </div>
+          <div class="card mini">
+            <span class="pill teal">Grounding</span>
+            <h3>Span-verifiable feedback</h3>
+            <p>The explanation-tuned variant traces every scorer feature to an inspectable text span, with a verifier that flags unsupported claims rather than silently repairing them.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="method">
+      <div class="wrap">
+        <h2>Method overview</h2>
+        <p class="lead">Each essay is processed through two complementary branches: persona-based rubric distributions and a jointly adapted LLM annotator. Their features are combined by a calibrated final scorer that applies per-prompt threshold optimization on the training partition only.</p>
+        <div class="overview-img">
+          <img src="figures/overview.png" alt="Overview of the GRADE explainable AES pipeline. Synthetic teacher personas produce rubric-score distributions; a jointly LoRA-adapted LLM annotator produces either abstract numeric features or span-grounded features; a calibrated XGBoost scorer combines both feature streams with the prompt indicator." />
+          <div class="caption">Inference flow shown with solid arrows; training-only components (the differentiable scoring surrogate and auxiliary annotation supervision) shown with dashed elements.</div>
+        </div>
+        <div class="pipeline">
+          <div class="card pipe-card">
+            <span class="pill blue">Personas</span>
+            <h3>Synthetic teacher ensemble</h3>
+            <p>Nine personas with distinct grading orientations produce a 9 × 4 rubric-score matrix per essay. Distribution statistics — mean, standard deviation, IQR, and agreement ratio — form a 68-dimensional persona feature vector.</p>
+          </div>
+          <div class="card pipe-card purple">
+            <span class="pill purple">Annotator</span>
+            <h3>Qwen2.5-14B + LoRA</h3>
+            <p>Adapters are trained through a differentiable scoring-surrogate loss with auxiliary supervision. The annotator emits either abstract numeric features (50-dim) for performance or span-grounded features (42-dim) for verifiability.</p>
+          </div>
+          <div class="card pipe-card teal">
+            <span class="pill teal">Scorer</span>
+            <h3>Calibrated prediction</h3>
+            <p>An XGBoost regressor combines annotation features, persona statistics, and the prompt indicator. Per-prompt thresholds are fit on training-partition predictions only.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="results">
+      <div class="wrap">
+        <h2>Results on ASAP2</h2>
+        <p class="lead">GRADE offers two operating points on the 16,392-essay ASAP2 benchmark: peak accuracy with abstract numeric features, or stronger verifiability with span-grounded features. Both substantially exceed the strongest frozen-annotation baseline in our experiments.</p>
+        <div class="results">
+          <div class="card metric">
+            <div class="num">0.846</div>
+            <div class="delta">+0.122 over frozen baseline</div>
+            <div class="lbl">QWK · performance-tuned</div>
+          </div>
+          <div class="card metric contrast">
+            <div class="num">0.804</div>
+            <div class="delta">span-grounded features</div>
+            <div class="lbl">QWK · explanation-tuned</div>
+          </div>
+          <div class="card metric">
+            <div class="num">0.724</div>
+            <div class="delta">→ 0.846 with joint LoRA</div>
+            <div class="lbl">Strongest frozen baseline</div>
+          </div>
+          <div class="card metric">
+            <div class="num">14B</div>
+            <div class="delta">single open-weight model</div>
+            <div class="lbl">Qwen2.5-14B-Instruct</div>
+          </div>
+        </div>
+        <div class="results-note">
+          Joint LoRA fine-tuning provides the largest single gain in our pipeline (+0.072 QWK from LoRA alone, +0.122 with personas added). Persona distributions remain complementary after joint adaptation, contributing +0.050 QWK to the performance-tuned variant and +0.019 QWK to the explanation-tuned variant. Full ablations and per-prompt breakdowns are reported in the paper.
+        </div>
+      </div>
+    </section>
+
+    <section id="demo">
+      <div class="wrap">
+        <div class="demo-intro">
+          <strong>Below: three test essays with their full GRADE explanation reports.</strong>
+          Switch tabs to see the same report format applied to essays at different score levels. Each report shows rubric feature scores, verified essay quotes that ground the model's judgments, a summary of strengths and weaknesses, and a snapshot of how the nine synthetic teacher personas distributed their scores. All quotes are verified to appear verbatim in the essay; unsupported claims are flagged rather than silently included.
+        </div>
+
+        <div class="demo-head">
+          <div>
+            <h2>Grounded report demo</h2>
+            <p class="lead">Anonymized examples from the held-out ASAP2 test set, showing the explanation-tuned report format.</p>
+          </div>
+          <div class="tabs" role="tablist" aria-label="Report examples">
+            <button class="tab active" data-tab="strong" role="tab" aria-selected="true">Strong essay (6/6)</button>
+            <button class="tab" data-tab="medium" role="tab" aria-selected="false">Medium essay (4/6)</button>
+            <button class="tab" data-tab="weak" role="tab" aria-selected="false">Weak essay (2/6)</button>
+          </div>
+        </div>
+
+        <div class="demo-shell">
+          <div class="card">
+            <div id="reportMeta" class="report-top"></div>
+            <div id="summaryRow" class="summary-row"></div>
+            <div class="quote-board">
+              <h3>Verified essay evidence</h3>
+              <div id="evidenceList"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-top:0">Rubric feature scores</h3>
+            <div id="featureBars"></div>
+            <div class="refs">
+              <h3>Detailed references</h3>
+              <div id="referenceList"></div>
+            </div>
+            <div class="persona-block">
+              <h3>Persona disagreement snapshot</h3>
+              <p class="persona-sub">Mean (●) and ±1 std spread across nine teacher personas. Tighter spreads indicate higher inter-rater agreement.</p>
+              <div id="personaBars" class="persona-bars"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-footer">
+          <strong>What you're seeing:</strong> the GRADE explanation-tuned variant produces these reports as its native output. Every rubric feature score corresponds to one or more verbatim quotes from the essay, classified as strength, weakness, or error. The persona snapshot shows the distribution of judgments from nine synthetic teacher graders — narrow distributions indicate clear-cut essays; wide distributions flag borderline cases for human review.
+        </div>
+      </div>
+    </section>
+
+    <section id="citation">
+      <div class="wrap">
+        <h2>Citation</h2>
+        <pre>@inproceedings{grade2026,
+  title     = {GRADE: Grounded Rubric Annotation and Distributional Evaluation
+               for Explainable Essay Scoring},
+  author    = {Anonymous Authors},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2026},
+  note      = {Under review}
+}</pre>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">GRADE project page · NeurIPS 2026 submission · Anonymized for double-blind review</div>
+  </footer>
+
+  <script>
+    // Each example carries the full report data plus the nine-persona score
+    // distributions per rubric dimension (mean and std).
+    const examples = {
+      strong: {
+        title: "Strong essay",
+        essayId: "AAAVUP14319000108247",
+        prompt: "Exploring Venus",
+        words: 497,
+        trueScore: "6/6",
+        predicted: "6/6",
+        raw: "5.82",
+        quality: "high",
+        verified: "12/12",
+        strengths: 6,
+        weaknesses: 1,
+        errors: 0,
+        features: {
+          "Claim support": 9,
+          "Source integration": 8,
+          "Organization": 7,
+          "Sentence fluency": 7,
+          "Conventions": 9,
+          "Overall strength": 8
+        },
+        personas: {
+          "Ideas & content":   { mean: 8.7, std: 0.6 },
+          "Organization":      { mean: 7.9, std: 0.8 },
+          "Style & voice":     { mean: 8.3, std: 0.7 },
+          "Conventions":       { mean: 9.1, std: 0.4 }
+        },
+        refs: [
+          {type:"strength", category:"Ideas / claim support", quote:"The effective conveying of benefits helps to support its idea of risking danger for the reward of landing.", why:"The essay clearly supports the main argument with relevant benefits."},
+          {type:"strength", category:"Source integration", quote:"The introduction of NASA also builds up this ethos, as to bring the audience to better trust in the author.", why:"The essay integrates external sources to build credibility."},
+          {type:"weakness", category:"Organization", quote:"However in contrast with the effective support of the main idea, the author also...", why:"The transition between supporting and opposing points is abrupt and could be smoother."}
+        ]
+      },
+      medium: {
+        title: "Medium essay",
+        essayId: "AAATRP14318001080035",
+        prompt: "Facial action coding system",
+        words: 420,
+        trueScore: "4/6",
+        predicted: "4/6",
+        raw: "4.11",
+        quality: "mid",
+        verified: "10/10",
+        strengths: 5,
+        weaknesses: 3,
+        errors: 2,
+        features: {
+          "Thesis clarity": 7,
+          "Evidence specificity": 6,
+          "Organization": 7,
+          "Sentence fluency": 8,
+          "Conventions": 6,
+          "Overall strength": 7
+        },
+        personas: {
+          "Ideas & content":   { mean: 6.8, std: 1.1 },
+          "Organization":      { mean: 7.0, std: 0.9 },
+          "Style & voice":     { mean: 7.2, std: 1.0 },
+          "Conventions":       { mean: 6.0, std: 1.2 }
+        },
+        refs: [
+          {type:"strength", category:"Ideas", quote:"Being able to identify emotions can be useful in countless situations.", why:"This sentence clearly introduces the potential benefits of the technology."},
+          {type:"weakness", category:"Organization", quote:"Tracking the muscles in the face of a student can really help the computer see what they are really thinking or feeling...", why:"The statement supports the argument but is not smoothly connected to previous points."},
+          {type:"error", category:"Conventions", quote:"their is something that the student likes", why:"There should be \u201cthere\u201d instead of \u201ctheir.\u201d"}
+        ]
+      },
+      weak: {
+        title: "Weak essay",
+        essayId: "AAAVUP14319000159542",
+        prompt: "Exploring Venus",
+        words: 200,
+        trueScore: "2/6",
+        predicted: "2/6",
+        raw: "1.82",
+        quality: "low",
+        verified: "10/12",
+        strengths: 1,
+        weaknesses: 8,
+        errors: 1,
+        features: {
+          "Thesis clarity": 3,
+          "Evidence specificity": 2,
+          "Organization": 3,
+          "Sentence fluency": 2,
+          "Conventions": 2,
+          "Overall strength": 3
+        },
+        personas: {
+          "Ideas & content":   { mean: 2.6, std: 0.9 },
+          "Organization":      { mean: 3.1, std: 0.8 },
+          "Style & voice":     { mean: 2.4, std: 1.0 },
+          "Conventions":       { mean: 2.2, std: 0.7 }
+        },
+        refs: [
+          {type:"weakness", category:"Ideas", quote:"They have been researching diffrent methods on how to sustaine life on the planet", why:"The statement is vague and does not align clearly with the source text."},
+          {type:"weakness", category:"Organization", quote:"Yes we are trying to figer out our planet earth still but there may be diffrent ways...", why:"The sentence lacks coherence and does not connect clearly to the argument about exploring Venus."},
+          {type:"error", category:"Conventions", quote:"diffrent", why:"Incorrect spelling of \u201cdifferent.\u201d"}
+        ]
+      }
+    };
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+    }
+
+    function qualityTagClass(q) {
+      if (q === "low") return "low";
+      if (q === "high" || q === "top") return "high";
+      return "warn";
+    }
+
+    function setExample(key) {
+      const ex = examples[key];
+      document.querySelectorAll('.tab').forEach(b => {
+        const active = b.dataset.tab === key;
+        b.classList.toggle('active', active);
+        b.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+
+      const qClass = qualityTagClass(ex.quality);
+      document.getElementById('reportMeta').innerHTML = `
+        <span class="tag blue">${escapeHtml(ex.title)}</span>
+        <span class="tag">Essay: ${escapeHtml(ex.essayId)}</span>
+        <span class="tag">Prompt: ${escapeHtml(ex.prompt)}</span>
+        <span class="tag">Words: ${escapeHtml(ex.words)}</span>
+        <span class="tag ok">Predicted: ${escapeHtml(ex.predicted)} (raw: ${escapeHtml(ex.raw)})</span>
+        <span class="tag ${qClass}">Quality band: ${escapeHtml(ex.quality)}</span>`;
+
+      document.getElementById('summaryRow').innerHTML = `
+        <div class="summary-item"><strong>${escapeHtml(ex.trueScore.split('/')[0])}</strong><span>True score</span></div>
+        <div class="summary-item"><strong>${escapeHtml(ex.predicted.split('/')[0])}</strong><span>Predicted</span></div>
+        <div class="summary-item"><strong>${escapeHtml(ex.strengths)}</strong><span>Strengths</span></div>
+        <div class="summary-item"><strong>${escapeHtml(ex.weaknesses)}</strong><span>Weaknesses</span></div>
+        <div class="summary-item"><strong>${escapeHtml(ex.verified)}</strong><span>Verified spans</span></div>`;
+
+      document.getElementById('evidenceList').innerHTML = ex.refs.map(r => `
+        <div class="excerpt ${r.type}">
+          <span class="kind">${escapeHtml(r.type)} \u00b7 ${escapeHtml(r.category)}</span>
+          <q>${escapeHtml(r.quote)}</q>
+        </div>`).join('');
+
+      const colors = ['blue','teal','purple','orange','blue','teal'];
+      document.getElementById('featureBars').innerHTML = Object.entries(ex.features).map(([k,v], i) => `
+        <div class="bar-row">
+          <span>${escapeHtml(k)}</span>
+          <div class="bar-bg"><div class="bar ${colors[i % colors.length]}" style="width:${Math.max(4, v*10)}%"></div></div>
+          <strong>${escapeHtml(v)}</strong>
+        </div>`).join('');
+
+      document.getElementById('referenceList').innerHTML = ex.refs.map(r => `
+        <div class="ref ${r.type}">
+          <div class="meta-line"><span class="badge ${r.type}">${escapeHtml(r.type)}</span><span class="cat">${escapeHtml(r.category)}</span><span class="tag ok">verified</span></div>
+          <div class="quote">\u201c${escapeHtml(r.quote)}\u201d</div>
+          <div class="why">${escapeHtml(r.why)}</div>
+        </div>`).join('');
+
+      // Persona disagreement bars: mean as a dot, std as a horizontal spread.
+      // Scores are on a 1-10 scale; we map onto the bar width.
+      document.getElementById('personaBars').innerHTML = Object.entries(ex.personas).map(([dim, stat]) => {
+        const meanPct = (stat.mean / 10) * 100;
+        const lowPct = Math.max(0, ((stat.mean - stat.std) / 10) * 100);
+        const highPct = Math.min(100, ((stat.mean + stat.std) / 10) * 100);
+        const spreadWidth = highPct - lowPct;
+        return `
+          <div class="persona-bar-row">
+            <span>${escapeHtml(dim)}</span>
+            <div class="persona-bar-bg">
+              <div class="persona-spread" style="left:${lowPct}%; width:${spreadWidth}%"></div>
+              <div class="persona-mean" style="left:${meanPct}%"></div>
+            </div>
+            <span class="persona-stats">\u03bc=${stat.mean.toFixed(1)} \u03c3=${stat.std.toFixed(1)}</span>
+          </div>`;
+      }).join('');
+    }
+
+    document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => setExample(btn.dataset.tab)));
+    setExample('strong');
+  </script>
+</body>
+</html>
