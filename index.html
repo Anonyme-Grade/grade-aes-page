@@ -238,6 +238,27 @@
       padding: 18px;
     }
     .quote-board h3 { margin-bottom: 12px; }
+    .essay-text {
+      max-height: 430px;
+      overflow: auto;
+      color: #344054;
+      font-size: 14px;
+      line-height: 1.75;
+      background: #fbfbfa;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .essay-mark {
+      border-radius: 4px;
+      padding: 1px 3px;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+    .essay-mark.strength { background: var(--green-soft); color: #17613b; }
+    .essay-mark.weakness { background: var(--yellow-soft); color: #7a4c00; }
+    .essay-mark.error { background: var(--red-soft); color: #8a1f17; }
     .excerpt { padding: 12px 13px; border-radius: 13px; margin: 10px 0; font-size: 14px; color: #344054; border: 1px solid transparent; }
     .excerpt.strength { background: var(--green-soft); border-color: #cdebd3; }
     .excerpt.weakness { background: var(--yellow-soft); border-color: #f4df9e; }
@@ -412,21 +433,21 @@
     <section id="results">
       <div class="wrap">
         <h2>Results on ASAP2</h2>
-        <p class="lead">GRADE offers two operating points on the 16,392-essay ASAP2 benchmark: peak accuracy with abstract numeric features, or stronger verifiability with span-grounded features. Both substantially exceed the strongest frozen-annotation baseline in our experiments.</p>
+        <p class="lead">GRADE offers two operating points on the 16,392-essay ASAP2 benchmark: peak accuracy with abstract numeric features, or stronger verifiability with span-grounded features. The public code reproduces the locked, non-leaky held-out result with thresholds fit without using held-out labels.</p>
         <div class="results">
           <div class="card metric">
-            <div class="num">0.846</div>
-            <div class="delta">+0.122 over frozen baseline</div>
+            <div class="num">0.838</div>
+            <div class="delta">locked held-out recipe</div>
             <div class="lbl">QWK · performance-tuned</div>
           </div>
           <div class="card metric contrast">
-            <div class="num">0.804</div>
+            <div class="num">0.778</div>
             <div class="delta">span-grounded features</div>
             <div class="lbl">QWK · explanation-tuned</div>
           </div>
           <div class="card metric">
             <div class="num">0.724</div>
-            <div class="delta">→ 0.846 with joint LoRA</div>
+            <div class="delta">frozen-annotation baseline</div>
             <div class="lbl">Strongest frozen baseline</div>
           </div>
           <div class="card metric">
@@ -436,7 +457,7 @@
           </div>
         </div>
         <div class="results-note">
-          Joint LoRA fine-tuning provides the largest single gain in our pipeline (+0.072 QWK from LoRA alone, +0.122 with personas added). Persona distributions remain complementary after joint adaptation, contributing +0.050 QWK to the performance-tuned variant and +0.019 QWK to the explanation-tuned variant. Full ablations and per-prompt breakdowns are reported in the paper.
+          The reviewer-facing code reproduces a locked held-out QWK of 0.838375 using the <code>weak_prompt_patch</code> recipe. The explanation-tuned grounded run trades peak accuracy for span-verifiable evidence, reaching approximately 0.778 QWK while producing the highlighted reports below.
         </div>
       </div>
     </section>
@@ -465,6 +486,8 @@
             <div id="reportMeta" class="report-top"></div>
             <div id="summaryRow" class="summary-row"></div>
             <div class="quote-board">
+              <h3>Highlighted essay text</h3>
+              <div id="essayText" class="essay-text"></div>
               <h3>Verified essay evidence</h3>
               <div id="evidenceList"></div>
             </div>
@@ -514,106 +537,240 @@
     // Each example carries the full report data plus the nine-persona score
     // distributions per rubric dimension (mean and std).
     const examples = {
-      strong: {
-        title: "Strong essay",
-        essayId: "AAATRP14318000416027",
-        prompt: "Facial action coding system",
-        words: 521,
-        trueScore: "5/6",
-        predicted: "5/6",
-        verified: "12/12",
-        strengths: 8,
-        weaknesses: 4,
-        errors: 0,
-        features: {
-          "Claim support": 6,
-          "Conclusion quality": 7,
-          "Grammar": 5,
-          "Intro quality": 8,
-          "Organization": 8,
-          "Punctuation": 6
-        },
-        personas: {
-          "Ideas & content": { mean: 7.3, std: 0.7 },
-          "Organization": { mean: 6.8, std: 0.4 },
-          "Style & voice": { mean: 6.2, std: 0.6 },
-          "Conventions": { mean: 6.9, std: 0.7 }
-        },
-        refs: [
-          {type:"strength", category:"Ideas", quote:"This is because of a new technology, the Facial Action Coding System, that 'tracks these facial movements'", why:"The essay clearly introduces the main idea and provides a concise explanation of the technology."},
-          {type:"strength", category:"Organization", quote:"Think of all the children who struggle because of the pace or difficulty of a class.", why:"The paragraphs are well structured and logically flow from one point to another."},
-          {type:"weakness", category:"Style", quote:"But by using this technology to address confusion, the students' understanding of the content will strengthen.", why:"The language is somewhat repetitive and lacks variety."},
-          {type:"weakness", category:"Conventions", quote:"There are many positives with being aware of a student's confusion.", why:"The sentence structure is awkward and grammatically incorrect."}
-        ]
-      },
-      medium: {
-        title: "Middle-range essay",
-        essayId: "AAAVUP14319000146533",
-        prompt: "Exploring Venus",
-        words: 360,
-        trueScore: "3/6",
-        predicted: "3/6",
-        verified: "12/12",
-        strengths: 6,
-        weaknesses: 6,
-        errors: 0,
-        features: {
-          "Grammar": 4,
-          "Claim support": 6,
-          "Intro quality": 5,
-          "Organization": 4,
-          "Punctuation": 3,
-          "Sentence variety": 3
-        },
-        personas: {
-          "Ideas & content": { mean: 5.4, std: 1.3 },
-          "Organization": { mean: 4.2, std: 1.2 },
-          "Style & voice": { mean: 4.0, std: 0.9 },
-          "Conventions": { mean: 3.4, std: 0.7 }
-        },
-        refs: [
-          {type:"strength", category:"Ideas", quote:"Venus is the second planet in our solar system it is proved that it is a very challenging place to study and It is also the closest to earth.", why:"The essay begins by introducing Venus and its proximity to Earth, setting up the challenge of studying it."},
-          {type:"strength", category:"Style", quote:"It has a thick atmosphere of 97% of carbon dioxide which is considered toxic and harmful to humans.", why:"The writer uses vivid language to describe the harsh conditions on Venus."},
-          {type:"weakness", category:"Organization", quote:"Every mission to venus has been unmanned for good reasons because no spacecraft survived the landing for more than a few hours", why:"This information is presented without clear structure, making it difficult to follow the main points."},
-          {type:"weakness", category:"Conventions", quote:"It also has the hottest surface in the planet after mecury.", why:"There is a spelling error in the reference to Mercury."}
-        ]
-      },
-      weak: {
-        title: "Developing essay",
-        essayId: "AAAVUP14319000056642",
-        prompt: "Exploring Venus",
-        words: 339,
-        trueScore: "1/6",
-        predicted: "1/6",
-        verified: "12/12",
-        strengths: 1,
-        weaknesses: 11,
-        errors: 0,
-        features: {
-          "Claim support": 3,
-          "Conclusion quality": 3,
-          "Evidence use": 3,
-          "Grammar": 2,
-          "Intro quality": 3,
-          "Organization": 3
-        },
-        personas: {
-          "Ideas & content": { mean: 2.6, std: 0.7 },
-          "Organization": { mean: 2.0, std: 0.5 },
-          "Style & voice": { mean: 2.1, std: 0.3 },
-          "Conventions": { mean: 2.0, std: 0.0 }
-        },
-        refs: [
-          {type:"strength", category:"Style", quote:"Maybe we do not need all of the tech stuff like we have today if it worked back then it will work today", why:"The writer's questioning tone gives the essay a distinct voice."},
-          {type:"weakness", category:"Ideas", quote:"the auther of this story will never know how they are going to do it because they will not say how they did it", why:"The thesis is unclear and does not effectively summarize the main argument."},
-          {type:"weakness", category:"Organization", quote:"But they did it a long time a long why can we not do it now", why:"Paragraphs lack clear structure and logical flow, making it difficult to follow the argument."},
-          {type:"weakness", category:"Style", quote:"back 1940 it did not require electronics at all because they did not have it back then", why:"Word choice is inconsistent and sometimes inaccurate, affecting clarity."}
-        ]
-      }
+          "strong": {
+                "title": "Strong essay",
+                "essayId": "AAATRP14318000416027",
+                "prompt": "Facial action coding system",
+                "words": 521,
+                "trueScore": "5/6",
+                "predicted": "5/6",
+                "verified": "12/12",
+                "strengths": 8,
+                "weaknesses": 4,
+                "errors": 0,
+                "features": {
+                      "Claim support": 6,
+                      "Conclusion quality": 7,
+                      "Grammar": 5,
+                      "Intro quality": 8,
+                      "Organization": 8,
+                      "Punctuation": 6
+                },
+                "personas": {
+                      "Ideas & content": {
+                            "mean": 7.3,
+                            "std": 0.7
+                      },
+                      "Organization": {
+                            "mean": 6.8,
+                            "std": 0.4
+                      },
+                      "Style & voice": {
+                            "mean": 6.2,
+                            "std": 0.6
+                      },
+                      "Conventions": {
+                            "mean": 6.9,
+                            "std": 0.7
+                      }
+                },
+                "refs": [
+                      {
+                            "type": "strength",
+                            "category": "Organization",
+                            "quote": "Think of all the children who struggle because of the pace or difficulty of a class.",
+                            "why": "The paragraphs are well-structured and logically flow from one point to another."
+                      },
+                      {
+                            "type": "strength",
+                            "category": "Organization",
+                            "quote": "Teachers all around the world can improving their educating methods by interpreting the data of their students.",
+                            "why": "The essay effectively transitions between different points and examples."
+                      },
+                      {
+                            "type": "weakness",
+                            "category": "Style",
+                            "quote": "But by using this technology to address confusion, the students' understanding of the content will strengthen.",
+                            "why": "The language is somewhat repetitive and lacks variety."
+                      },
+                      {
+                            "type": "weakness",
+                            "category": "Conventions",
+                            "quote": "There are many positives with being aware of a student's confusion.",
+                            "why": "The sentence structure is awkward and grammatically incorrect."
+                      },
+                      {
+                            "type": "weakness",
+                            "category": "Conventions",
+                            "quote": "These would become schools filled with students that love to learn.",
+                            "why": "Punctuation usage is inconsistent and sometimes incorrect."
+                      }
+                ],
+                "essayText": "What is the value of a smile? For most of us, it is simply a way to express your feelings. But in the future, we may be using smiles and other facial expressions to help others learn. This is because of a new technology, the Facial Action Coding System, that \"tracks these facial movements\" (D'Alto 4). It uses a computer algorithm to monitor the emotions of people, then it can reveal how exactly the person is feeling based off \"movement of one or more muscles\" (D'Alto 3). It may seem far fetched, but use of this technology has the possibility of improving the classroom experience for millions of children around the world. The use of this FACS technology in the classroom revolves around adapting lesson plans as they are being taught. Thomas Huang, a professor at the University of Illinois, said, \"A classroom computer could recognize when a student is becoming confused or bored. Then it could modify the lesson, like an effective human instructor.\" (D'Alto 6). His logic makes sense, and implementing this technology could have a profound impact on students around the world. Think of all the children who struggle because of the pace or difficulty of a class. Those children may not have the financial resources for a tutor or the willingness to ask the teacher. But by using this technology to address confusion, the students' understanding of the content will strengthen. However, the benefits don't stop at the children. Teachers all around the world can improving their educating methods by interpreting the data of their students. A teacher who is using this technology may see that 75% of her/his students made confused faces when confronted with problem #7 on the homework. The teacher may choose to review that subject the next day with all of her/his students. Also, the use of this technology could lead to a more enjoyable classroom experience. There are many positives with being aware of a student's confusion. But several advantages may also arise from being aware of their boredom. If most students in a classroom understand a subject, but are bored with it, the teacher may see this data and choose to move on to new material. This avoids wasting time on content that the students are proficient in, and increases the morale of the students. Learning a new exciting topic may give energy to these students. Looking back at all of the benefits of utilizing this technology, it would be reasonable to say that FACS has the potential to benefit schools around the globe if used correctly. Implementing FACS in schools can lead to higher student morale, more proficient student comprehension, and an overall more enjoyable school experience. Students can be guided back on to the right track when they begin to get confused. Students can also be pushed a little bit harder when things begin to become too easy. Eliminating confusion and promoting enjoyable learning can have profoud effects on schools. These would become schools filled with students that love to learn. If FACS were to see these smiling faces, it would deduce that the subjects are \"100 percent happy.\""
+          },
+          "medium": {
+                "title": "Middle-range essay",
+                "essayId": "AAAVUP14319000146533",
+                "prompt": "Exploring Venus",
+                "words": 360,
+                "trueScore": "3/6",
+                "predicted": "3/6",
+                "verified": "12/12",
+                "strengths": 6,
+                "weaknesses": 6,
+                "errors": 0,
+                "features": {
+                      "Grammar": 4,
+                      "Claim support": 6,
+                      "Intro quality": 5,
+                      "Organization": 4,
+                      "Punctuation": 3,
+                      "Sentence variety": 3
+                },
+                "personas": {
+                      "Ideas & content": {
+                            "mean": 5.4,
+                            "std": 1.3
+                      },
+                      "Organization": {
+                            "mean": 4.2,
+                            "std": 1.2
+                      },
+                      "Style & voice": {
+                            "mean": 4,
+                            "std": 0.9
+                      },
+                      "Conventions": {
+                            "mean": 3.4,
+                            "std": 0.7
+                      }
+                },
+                "refs": [
+                      {
+                            "type": "strength",
+                            "category": "Ideas",
+                            "quote": "Venus is the second planet in our solar system it is proved that it is a very challenging place to study and It is also the closest to earth.",
+                            "why": "The essay begins by introducing Venus and its proximity to Earth, setting up the challenge of studying it."
+                      },
+                      {
+                            "type": "strength",
+                            "category": "Style",
+                            "quote": "It has a thick atmosphere of 97% of carbon dioxide which is considered toxic and harmful to humans .The clouds are highly corrosive sulfric acid in the atmosphere and the temperatures average is over 800 degees fahrenheit and the atmospheric pressure is 90 times greater than what we experience in our own planet the conditions are far more extreme than anything humans encounter on earth.",
+                            "why": "The writer uses vivid language to describe the harsh conditions on Venus, engaging the reader."
+                      },
+                      {
+                            "type": "weakness",
+                            "category": "Organization",
+                            "quote": "Every mission to venus has been unmanned for good reasons because no spacecraft survived the landing for more than a few hours this explains why no spaceship has touched down on venus in three decades.",
+                            "why": "This information is presented without clear structure, making it difficult to follow the main points."
+                      },
+                      {
+                            "type": "weakness",
+                            "category": "Conventions",
+                            "quote": "It also has the hottest surface in the planet after mecury.",
+                            "why": "There's a spelling error ('mecury' instead of 'mercury')."
+                      },
+                      {
+                            "type": "weakness",
+                            "category": "Style",
+                            "quote": "either that or Mars.",
+                            "why": "The sentence lacks variety and does not flow well with the preceding content."
+                      }
+                ],
+                "essayText": "It is called an evening star and is one of the brightest points of light in the night sky,It is named Venus. Venus is the second planet in our solar system it is proved that it is a very challenging place to study and It is also the closest to earth. Every mission to venus has been unmanned for good reasons because no spacecraft survived the landing for more than a few hours this explains why no spaceship has touched down on venus in three decades. Venus had a lot of analogus features like earth like rivers, valleys, mountains and craters.But looking at venus it has more dangers than worths even if it is one of our options if we consider visiting the nearest planet.either that or Mars. It has a thick atmosphere of 97% of carbon dioxide which is considered toxic and harmful to humans .The clouds are highly corrosive sulfric acid in the atmosphere and the temperatures average is over 800 degees fahrenheit and the atmospheric pressure is 90 times greater than what we experience in our own planet the conditions are far more extreme than anything humans encounter on earth. It also has the hottest surface in the planet after mecury. Venus was once like earth before it was covered with oceans and it could support various forms of life just like earth that why it is considered a planetary visit. Scientist are looking for a way to make mission to venus possible .They found out that it won't be an easy condition,but if humans stay out of the unfriendly ground conditions by staying up and out of their way it will be survivable for humans. NASA is still researching other ways to survive venus but for now it is dangerous other researchers are working on innovations that would allow our machines to last long enough to contribute meaningfully to our knowledge of venus.The author says that \"Our travels on earth and beyond should not be limited by dangers and doubts but should be expanded to meet the very edges of imagination and innovation\" so we should expand our knowlegde and not limit ourselves about the dangers."
+          },
+          "weak": {
+                "title": "Developing essay",
+                "essayId": "AAAVUP14319000056642",
+                "prompt": "Exploring Venus",
+                "words": 339,
+                "trueScore": "1/6",
+                "predicted": "1/6",
+                "verified": "12/12",
+                "strengths": 1,
+                "weaknesses": 11,
+                "errors": 0,
+                "features": {
+                      "Claim support": 3,
+                      "Conclusion quality": 3,
+                      "Evidence use": 3,
+                      "Grammar": 2,
+                      "Intro quality": 3,
+                      "Organization": 3
+                },
+                "personas": {
+                      "Ideas & content": {
+                            "mean": 2.6,
+                            "std": 0.7
+                      },
+                      "Organization": {
+                            "mean": 2,
+                            "std": 0.5
+                      },
+                      "Style & voice": {
+                            "mean": 2.1,
+                            "std": 0.3
+                      },
+                      "Conventions": {
+                            "mean": 2,
+                            "std": 0
+                      }
+                },
+                "refs": [
+                      {
+                            "type": "strength",
+                            "category": "Style",
+                            "quote": "Maybe we do not need all of the tech stuff like we have today if it worked back then it will work today",
+                            "why": "The writer's unique perspective and questioning tone add interest to the essay."
+                      },
+                      {
+                            "type": "weakness",
+                            "category": "Organization",
+                            "quote": "But they did it a long time a long why can we not do it now",
+                            "why": "Paragraphs lack clear structure and logical flow, making it difficult to follow the argument."
+                      },
+                      {
+                            "type": "weakness",
+                            "category": "Style",
+                            "quote": "back 1940 it did not require electronics at all because they did not have it back then",
+                            "why": "Word choice is inconsistent and sometimes inaccurate, affecting clarity."
+                      },
+                      {
+                            "type": "weakness",
+                            "category": "Conventions",
+                            "quote": "Why dont they try putting them both together see if that works",
+                            "why": "Sentence structure is often incorrect, impacting readability."
+                      }
+                ],
+                "essayText": "The auther of this story will never know how they are going to do it because they will not say how they did it but we have the people and michianls to do it now. But they did it a long time a long why can we not do it now. Because back then they did not have the money of the stuff to do it but now we have all of that and people to build it so why can we not build one and got up to space. It says that NASA is workig on other approaches o studying venus. But they will not be able to get the gases and all the stuff they need if they can not put a ship on venus because you need to be able to get up there for that. back 1940 it did not require electronics at all because they did not have it back then. Why dont they try putting them both together see if that works. Maybe we do not need all of the tech stuff like we have today if it worked back then it will work today. The NASA needs to look into stuff like that they are going to have to spend money to make the money back and they can make mor money back at doing to because that's a big pay day at the end of it. But it they want to find out how to they need to test it all over and over because nothing is going to be safe about this because you are caring a lot of fuel and different things to be able you send to space like that. So the studying of venus worthy pursuit yes it would be a fun job if you got to do that. When you get the information then you can sale it to the top peolpe and get big money out of it if you did not sign a form and anything then you can sell it to make money."
+          }
     };
 
     function escapeHtml(str) {
       return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+    }
+
+    function renderHighlightedEssay(ex) {
+      const text = String(ex.essayText || "");
+      const ranges = [];
+      ex.refs.forEach((r, idx) => {
+        const start = text.indexOf(r.quote);
+        if (start < 0) return;
+        const end = start + r.quote.length;
+        if (ranges.some(span => start < span.end && end > span.start)) return;
+        ranges.push({start, end, ref: r, idx});
+      });
+      ranges.sort((a, b) => a.start - b.start);
+
+      let cursor = 0;
+      let html = "";
+      ranges.forEach(span => {
+        html += escapeHtml(text.slice(cursor, span.start));
+        html += `<mark class="essay-mark ${escapeHtml(span.ref.type)}" title="${escapeHtml(span.ref.category)}: ${escapeHtml(span.ref.why)}">${escapeHtml(text.slice(span.start, span.end))}</mark>`;
+        cursor = span.end;
+      });
+      html += escapeHtml(text.slice(cursor));
+      return html;
     }
 
     function setExample(key) {
@@ -637,6 +794,8 @@
         <div class="summary-item"><strong>${escapeHtml(ex.strengths)}</strong><span>Strengths</span></div>
         <div class="summary-item"><strong>${escapeHtml(ex.weaknesses)}</strong><span>Weaknesses</span></div>
         <div class="summary-item"><strong>${escapeHtml(ex.verified)}</strong><span>Verified spans</span></div>`;
+
+      document.getElementById('essayText').innerHTML = renderHighlightedEssay(ex);
 
       document.getElementById('evidenceList').innerHTML = ex.refs.map(r => `
         <div class="excerpt ${r.type}">
