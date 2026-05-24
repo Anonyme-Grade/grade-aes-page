@@ -339,8 +339,7 @@
         <a class="btn primary" href="#abstract">Read abstract</a>
         <a class="btn" href="#method">Method</a>
         <a class="btn" href="#demo">View grounded reports</a>
-        <a class="btn" href="paper.pdf">Paper (PDF)</a>
-        <a class="btn" href="https://github.com/USERNAME/grade-aes">Code</a>
+        <a class="btn" href="https://github.com/Anonyme-Grade/GRADE">Code</a>
       </div>
     </div>
   </header>
@@ -445,7 +444,7 @@
     <section id="demo">
       <div class="wrap">
         <div class="demo-intro">
-          <strong>Below: three test essays with their full GRADE explanation reports.</strong>
+          <strong>Below: three held-out essays with GRADE-style grounded explanation reports.</strong>
           Switch tabs to see the same report format applied to essays at different score levels. Each report shows rubric feature scores, verified essay quotes that ground the model's judgments, a summary of strengths and weaknesses, and a snapshot of how the nine synthetic teacher personas distributed their scores. All quotes are verified to appear verbatim in the essay; unsupported claims are flagged rather than silently included.
         </div>
 
@@ -455,9 +454,9 @@
             <p class="lead">Anonymized examples from the held-out ASAP2 test set, showing the explanation-tuned report format.</p>
           </div>
           <div class="tabs" role="tablist" aria-label="Report examples">
-            <button class="tab active" data-tab="strong" role="tab" aria-selected="true">Strong essay (6/6)</button>
-            <button class="tab" data-tab="medium" role="tab" aria-selected="false">Medium essay (4/6)</button>
-            <button class="tab" data-tab="weak" role="tab" aria-selected="false">Weak essay (2/6)</button>
+            <button class="tab active" data-tab="strong" role="tab" aria-selected="true">Strong essay (5/6)</button>
+            <button class="tab" data-tab="medium" role="tab" aria-selected="false">Middle-range essay (3/6)</button>
+            <button class="tab" data-tab="weak" role="tab" aria-selected="false">Developing essay (1/6)</button>
           </div>
         </div>
 
@@ -487,7 +486,7 @@
         </div>
 
         <div class="demo-footer">
-          <strong>What you're seeing:</strong> the GRADE explanation-tuned variant produces these reports as its native output. Every rubric feature score corresponds to one or more verbatim quotes from the essay, classified as strength, weakness, or error. The persona snapshot shows the distribution of judgments from nine synthetic teacher graders — narrow distributions indicate clear-cut essays; wide distributions flag borderline cases for human review.
+          <strong>What you're seeing:</strong> the GRADE explanation-tuned variant produces grounded evidence as its native output. Every rubric feature score corresponds to one or more verbatim quotes from the essay, classified as strength, weakness, or error. The persona snapshot shows the distribution of judgments from nine synthetic teacher graders; narrow distributions indicate clear-cut essays and wider distributions flag borderline cases for human review.
         </div>
       </div>
     </section>
@@ -517,113 +516,104 @@
     const examples = {
       strong: {
         title: "Strong essay",
-        essayId: "AAAVUP14319000108247",
-        prompt: "Exploring Venus",
-        words: 497,
-        trueScore: "6/6",
-        predicted: "6/6",
-        raw: "5.82",
-        quality: "high",
+        essayId: "AAATRP14318000416027",
+        prompt: "Facial action coding system",
+        words: 521,
+        trueScore: "5/6",
+        predicted: "5/6",
         verified: "12/12",
-        strengths: 6,
-        weaknesses: 1,
+        strengths: 8,
+        weaknesses: 4,
         errors: 0,
         features: {
-          "Claim support": 9,
-          "Source integration": 8,
-          "Organization": 7,
-          "Sentence fluency": 7,
-          "Conventions": 9,
-          "Overall strength": 8
+          "Claim support": 6,
+          "Conclusion quality": 7,
+          "Grammar": 5,
+          "Intro quality": 8,
+          "Organization": 8,
+          "Punctuation": 6
         },
         personas: {
-          "Ideas & content":   { mean: 8.7, std: 0.6 },
-          "Organization":      { mean: 7.9, std: 0.8 },
-          "Style & voice":     { mean: 8.3, std: 0.7 },
-          "Conventions":       { mean: 9.1, std: 0.4 }
+          "Ideas & content": { mean: 7.3, std: 0.7 },
+          "Organization": { mean: 6.8, std: 0.4 },
+          "Style & voice": { mean: 6.2, std: 0.6 },
+          "Conventions": { mean: 6.9, std: 0.7 }
         },
         refs: [
-          {type:"strength", category:"Ideas / claim support", quote:"The effective conveying of benefits helps to support its idea of risking danger for the reward of landing.", why:"The essay clearly supports the main argument with relevant benefits."},
-          {type:"strength", category:"Source integration", quote:"The introduction of NASA also builds up this ethos, as to bring the audience to better trust in the author.", why:"The essay integrates external sources to build credibility."},
-          {type:"weakness", category:"Organization", quote:"However in contrast with the effective support of the main idea, the author also...", why:"The transition between supporting and opposing points is abrupt and could be smoother."}
+          {type:"strength", category:"Ideas", quote:"This is because of a new technology, the Facial Action Coding System, that 'tracks these facial movements'", why:"The essay clearly introduces the main idea and provides a concise explanation of the technology."},
+          {type:"strength", category:"Organization", quote:"Think of all the children who struggle because of the pace or difficulty of a class.", why:"The paragraphs are well structured and logically flow from one point to another."},
+          {type:"weakness", category:"Style", quote:"But by using this technology to address confusion, the students' understanding of the content will strengthen.", why:"The language is somewhat repetitive and lacks variety."},
+          {type:"weakness", category:"Conventions", quote:"There are many positives with being aware of a student's confusion.", why:"The sentence structure is awkward and grammatically incorrect."}
         ]
       },
       medium: {
-        title: "Medium essay",
-        essayId: "AAATRP14318001080035",
-        prompt: "Facial action coding system",
-        words: 420,
-        trueScore: "4/6",
-        predicted: "4/6",
-        raw: "4.11",
-        quality: "mid",
-        verified: "10/10",
-        strengths: 5,
-        weaknesses: 3,
-        errors: 2,
+        title: "Middle-range essay",
+        essayId: "AAAVUP14319000146533",
+        prompt: "Exploring Venus",
+        words: 360,
+        trueScore: "3/6",
+        predicted: "3/6",
+        verified: "12/12",
+        strengths: 6,
+        weaknesses: 6,
+        errors: 0,
         features: {
-          "Thesis clarity": 7,
-          "Evidence specificity": 6,
-          "Organization": 7,
-          "Sentence fluency": 8,
-          "Conventions": 6,
-          "Overall strength": 7
+          "Grammar": 4,
+          "Claim support": 6,
+          "Intro quality": 5,
+          "Organization": 4,
+          "Punctuation": 3,
+          "Sentence variety": 3
         },
         personas: {
-          "Ideas & content":   { mean: 6.8, std: 1.1 },
-          "Organization":      { mean: 7.0, std: 0.9 },
-          "Style & voice":     { mean: 7.2, std: 1.0 },
-          "Conventions":       { mean: 6.0, std: 1.2 }
+          "Ideas & content": { mean: 5.4, std: 1.3 },
+          "Organization": { mean: 4.2, std: 1.2 },
+          "Style & voice": { mean: 4.0, std: 0.9 },
+          "Conventions": { mean: 3.4, std: 0.7 }
         },
         refs: [
-          {type:"strength", category:"Ideas", quote:"Being able to identify emotions can be useful in countless situations.", why:"This sentence clearly introduces the potential benefits of the technology."},
-          {type:"weakness", category:"Organization", quote:"Tracking the muscles in the face of a student can really help the computer see what they are really thinking or feeling...", why:"The statement supports the argument but is not smoothly connected to previous points."},
-          {type:"error", category:"Conventions", quote:"their is something that the student likes", why:"There should be \u201cthere\u201d instead of \u201ctheir.\u201d"}
+          {type:"strength", category:"Ideas", quote:"Venus is the second planet in our solar system it is proved that it is a very challenging place to study and It is also the closest to earth.", why:"The essay begins by introducing Venus and its proximity to Earth, setting up the challenge of studying it."},
+          {type:"strength", category:"Style", quote:"It has a thick atmosphere of 97% of carbon dioxide which is considered toxic and harmful to humans.", why:"The writer uses vivid language to describe the harsh conditions on Venus."},
+          {type:"weakness", category:"Organization", quote:"Every mission to venus has been unmanned for good reasons because no spacecraft survived the landing for more than a few hours", why:"This information is presented without clear structure, making it difficult to follow the main points."},
+          {type:"weakness", category:"Conventions", quote:"It also has the hottest surface in the planet after mecury.", why:"There is a spelling error in the reference to Mercury."}
         ]
       },
       weak: {
-        title: "Weak essay",
-        essayId: "AAAVUP14319000159542",
+        title: "Developing essay",
+        essayId: "AAAVUP14319000056642",
         prompt: "Exploring Venus",
-        words: 200,
-        trueScore: "2/6",
-        predicted: "2/6",
-        raw: "1.82",
-        quality: "low",
-        verified: "10/12",
+        words: 339,
+        trueScore: "1/6",
+        predicted: "1/6",
+        verified: "12/12",
         strengths: 1,
-        weaknesses: 8,
-        errors: 1,
+        weaknesses: 11,
+        errors: 0,
         features: {
-          "Thesis clarity": 3,
-          "Evidence specificity": 2,
-          "Organization": 3,
-          "Sentence fluency": 2,
-          "Conventions": 2,
-          "Overall strength": 3
+          "Claim support": 3,
+          "Conclusion quality": 3,
+          "Evidence use": 3,
+          "Grammar": 2,
+          "Intro quality": 3,
+          "Organization": 3
         },
         personas: {
-          "Ideas & content":   { mean: 2.6, std: 0.9 },
-          "Organization":      { mean: 3.1, std: 0.8 },
-          "Style & voice":     { mean: 2.4, std: 1.0 },
-          "Conventions":       { mean: 2.2, std: 0.7 }
+          "Ideas & content": { mean: 2.6, std: 0.7 },
+          "Organization": { mean: 2.0, std: 0.5 },
+          "Style & voice": { mean: 2.1, std: 0.3 },
+          "Conventions": { mean: 2.0, std: 0.0 }
         },
         refs: [
-          {type:"weakness", category:"Ideas", quote:"They have been researching diffrent methods on how to sustaine life on the planet", why:"The statement is vague and does not align clearly with the source text."},
-          {type:"weakness", category:"Organization", quote:"Yes we are trying to figer out our planet earth still but there may be diffrent ways...", why:"The sentence lacks coherence and does not connect clearly to the argument about exploring Venus."},
-          {type:"error", category:"Conventions", quote:"diffrent", why:"Incorrect spelling of \u201cdifferent.\u201d"}
+          {type:"strength", category:"Style", quote:"Maybe we do not need all of the tech stuff like we have today if it worked back then it will work today", why:"The writer's questioning tone gives the essay a distinct voice."},
+          {type:"weakness", category:"Ideas", quote:"the auther of this story will never know how they are going to do it because they will not say how they did it", why:"The thesis is unclear and does not effectively summarize the main argument."},
+          {type:"weakness", category:"Organization", quote:"But they did it a long time a long why can we not do it now", why:"Paragraphs lack clear structure and logical flow, making it difficult to follow the argument."},
+          {type:"weakness", category:"Style", quote:"back 1940 it did not require electronics at all because they did not have it back then", why:"Word choice is inconsistent and sometimes inaccurate, affecting clarity."}
         ]
       }
     };
 
     function escapeHtml(str) {
       return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-    }
-
-    function qualityTagClass(q) {
-      if (q === "low") return "low";
-      if (q === "high" || q === "top") return "high";
-      return "warn";
     }
 
     function setExample(key) {
@@ -634,14 +624,12 @@
         b.setAttribute('aria-selected', active ? 'true' : 'false');
       });
 
-      const qClass = qualityTagClass(ex.quality);
       document.getElementById('reportMeta').innerHTML = `
         <span class="tag blue">${escapeHtml(ex.title)}</span>
         <span class="tag">Essay: ${escapeHtml(ex.essayId)}</span>
         <span class="tag">Prompt: ${escapeHtml(ex.prompt)}</span>
         <span class="tag">Words: ${escapeHtml(ex.words)}</span>
-        <span class="tag ok">Predicted: ${escapeHtml(ex.predicted)} (raw: ${escapeHtml(ex.raw)})</span>
-        <span class="tag ${qClass}">Quality band: ${escapeHtml(ex.quality)}</span>`;
+        <span class="tag ok">Report score: ${escapeHtml(ex.predicted)}</span>`;
 
       document.getElementById('summaryRow').innerHTML = `
         <div class="summary-item"><strong>${escapeHtml(ex.trueScore.split('/')[0])}</strong><span>True score</span></div>
